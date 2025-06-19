@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, #0066cc 0%, #003399 100%);
+}
+
+.transaction-path {
+  stroke-dasharray: 10;
+  animation: dash 2s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.transaction-node {
+  transition: all 0.3s ease;
+}
+
+.transaction-node:hover {
+  filter: drop-shadow(0 0 10px rgba(0, 102, 204, 0.7));
+  transform: scale(1.05);
+}
+
+.section {
+  padding: 4rem 0;
+}
+
+.hero {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+}
+
+.btn-primary {
+  @apply px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition-colors;
+}
+
+.btn-secondary {
+  @apply px-6 py-2 bg-white text-blue-600 font-semibold rounded-md border border-blue-600 hover:bg-blue-50 transition-colors;
+}
+
+.feature-card {
+  @apply p-6 bg-white rounded-xl shadow-lg transition-all hover:shadow-xl;
+}
+
+.simulator-container {
+  @apply my-16 p-8 bg-gray-50 rounded-xl shadow-md;
+  min-height: 400px;
+}

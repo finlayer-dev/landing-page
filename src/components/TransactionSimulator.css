@@ -1,0 +1,156 @@
+.transaction-packet {
+  filter: drop-shadow(0 0 5px rgba(0, 204, 102, 0.7));
+  transition: transform 0.3s ease-out, filter 0.5s ease;
+}
+
+.simulator-container {
+  background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.simulator-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(to right, #3366cc, #00cc66, #ff6600);
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.transaction-node {
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+}
+
+.transaction-node:hover {
+  transform: scale(1.05);
+  cursor: pointer;
+  filter: brightness(1.05);
+}
+
+/* Enhanced styles for clarity */
+.transaction-node text {
+  pointer-events: none; /* Ensures clicks pass through text to the node */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Enhanced pulse effect for active nodes */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.95;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
+  }
+}
+
+.transaction-node[opacity="1"] {
+  animation: pulse 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
+
+/* Better scrolling for steps sidebar on mobile */
+@media (max-width: 768px) {
+  .simulator-container .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+}
+
+/* Styling for step list items */
+.simulator-container .overflow-y-auto > div {
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.simulator-container .overflow-y-auto > div.bg-primary {
+  border-left-color: #3366cc;
+}
+
+/* Custom scrollbar for modern browsers */
+.simulator-container .overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.simulator-container .overflow-y-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.simulator-container .overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.simulator-container .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Enhanced Current Step card styling */
+.bg-gradient-to-r {
+  background-size: 200% 100%;
+  animation: gradientShift 8s infinite linear;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.text-primary {
+  color: #3366cc;
+}
+
+.border-primary {
+  border-color: #3366cc;
+}
+
+.bg-primary {
+  background-color: #3366cc;
+}
+
+/* Current step animation */
+.border-l-4 {
+  transition: all 0.3s ease;
+}
+
+/* Step counter circle pulse effect */
+@keyframes softPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 rgba(51, 102, 204, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 8px rgba(51, 102, 204, 0.6); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(51, 102, 204, 0.4); }
+}
+
+.bg-primary.rounded-full {
+  animation: softPulse 2s infinite ease-in-out;
+}

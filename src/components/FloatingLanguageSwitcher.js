@@ -1,4 +1,6 @@
 import React from 'react';
+import { Button, Space } from 'antd';
+import { GlobalOutlined } from '@ant-design/icons';
 import { useLanguage } from '../context/LanguageContext';
 import '../styles/LanguageSwitcher.css';
 
@@ -7,22 +9,24 @@ const FloatingLanguageSwitcher = () => {
   
   return (
     <div className="floating-language-switcher">
-      <button
-        onClick={() => setLanguage('vi')}
-        className={`flag-button ${language === 'vi' ? 'active' : ''}`}
-        aria-label="Chuyển sang tiếng Việt"
-        title="Tiếng Việt"
-      >
-        <div className="flag flag-vi"></div>
-      </button>
-      <button
-        onClick={() => setLanguage('en')}
-        className={`flag-button ${language === 'en' ? 'active' : ''}`}
-        aria-label="Switch to English"
-        title="English"
-      >
-        <div className="flag flag-en"></div>
-      </button>
+      <Space.Compact>
+        <Button
+          type={language === 'vi' ? 'primary' : 'default'}
+          onClick={() => setLanguage('vi')}
+          icon={<GlobalOutlined />}
+          size="small"
+        >
+          VI
+        </Button>
+        <Button
+          type={language === 'en' ? 'primary' : 'default'}
+          onClick={() => setLanguage('en')}
+          icon={<GlobalOutlined />}
+          size="small"
+        >
+          EN
+        </Button>
+      </Space.Compact>
     </div>
   );
 };

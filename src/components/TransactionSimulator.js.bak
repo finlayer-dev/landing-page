@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
-import { Button, Slider, Card, Select, Row, Col, Typography, Space, Tooltip, Alert } from 'antd';
-import { PlayCircleOutlined, PauseOutlined, ReloadOutlined, StepForwardOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import './TransactionSimulator.css';
 import { useLanguage } from '../context/LanguageContext';
 import siteTranslations from '../translations/index';
@@ -11,7 +9,9 @@ const TransactionSimulator = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(0.7); // hoặc 0.5 cho chậm hơn
   const [showDetails, setShowDetails] = useState(null);
-  const [scenarioType, setScenarioType] = useState('success'); // 'success' or 'rejected'
+  const [showTransactionSuccess, setShowTransactionSuccess] = useState(false);
+  const [showTransactionRejected, setShowTransactionRejected] = useState(false);
+  const [scenarioType, setScenarioType] = useState('success'); // 'success' hoặc 'rejected'
   const { language } = useLanguage(); // Use the language from context
   const simulationRef = useRef(null);
   const timelineRef = useRef(null);
@@ -44,10 +44,16 @@ const TransactionSimulator = () => {
     // Initialize GSAP timeline
     timelineRef.current = gsap.timeline({ paused: true });
     
-    // Setup animations based on the selected scenario
+    // Reset state when scenario changes
+    setCurrentStep(0);
+    setShowDetails(null);
+    setShowTransactionSuccess(false);
+    setShowTransactionRejected(false);
+    
+    // Setup animations based on scenario type
     if (scenarioType === 'success') {
       setupAnimations();
-    } else {
+    } else if (scenarioType === 'rejected') {
       setupRejectedAnimations();
     }
     
@@ -56,7 +62,7 @@ const TransactionSimulator = () => {
         timelineRef.current.kill();
       }
     };
-  }, [scenarioType]);
+  }, [scenarioType]); // Recreate timeline when scenario changes
   
   useEffect(() => {
     // Control timeline based on play state
@@ -231,143 +237,47 @@ const TransactionSimulator = () => {
       })
       // Step 9: Smart Contracts to Ethereum L1
       .to("#transaction-packet", { 
-        duration: 0.8, 
+        duration: 1.2, // Kéo dài thời gian để nhìn thấy rõ hơn
         attr: { cx: positions[7].x, cy: positions[7].y },
         backgroundColor: l1Color, 
-        boxShadow: "0 0 5px rgba(64, 64, 64, 0.5)",
+        boxShadow: "0 0 8px rgba(64, 64, 64, 0.7)", // Tăng độ sáng
         ease: "power1.inOut",
         onStart: () => updateStepIfPlaying(8),
-        onComplete: () => updateStepIfPlaying(8)
-      });
-  };
-  
-  const setupRejectedAnimations = () => {
-    if (!timelineRef.current) return;
-    
-    // Reset timeline
-    timelineRef.current.clear();
-    
-    // Define colors for different parts of the flow
-    const userColor = "#3366cc";       // Blue for user
-    const walletColor = "#ffaa00";     // Orange for wallet
-    const proxyColor = "#00cc66";      // Green for Proxy RPC
-    const amlColor = "#ff6600";        // Orange for AML/Risk API (third-party)
-    const didValidatorColor = "#9966ff"; // Purple for DID Validator
-    const rejectionColor = "#ff3333";  // Red for rejection
-    
-    // Create animations for the rejected transaction flow
-    timelineRef.current
-      // Step 1: User to Wallet (same as success flow)
-      .set("#transaction-packet", { attr: { cx: positions[0].x, cy: positions[0].y }, backgroundColor: userColor, scale: 1, opacity: 1 })
-      .to("#transaction-packet", { 
-        duration: 0.8, 
-        attr: { cx: positions[1].x, cy: positions[1].y },
-        backgroundColor: walletColor, 
-        ease: "power1.inOut",
-        onStart: () => updateStepIfPlaying(0),
-        onComplete: () => updateStepIfPlaying(0)
-      })
-      // Step 2: Wallet to Proxy RPC (same as success flow)
-      .to("#transaction-packet", { 
-        duration: 0.8, 
-        attr: { cx: positions[2].x, cy: positions[2].y },
-        backgroundColor: proxyColor, 
-        ease: "power1.inOut",
-        onStart: () => updateStepIfPlaying(1),
-        onComplete: () => updateStepIfPlaying(1) 
-      })
-      // Step 3: Proxy to Third-party RiskScore/AML API (same as success flow)
-      .to("#transaction-packet-clone-1", { 
-        duration: 0.8,
-        backgroundColor: amlColor,
-        autoAlpha: 1,
-        scale: 0.8,
-        ease: "power2.out",
-        motionPath: {
-          path: "#proxy-to-aml-path",
-          align: "#proxy-to-aml-path",
-          alignOrigin: [0.5, 0.5],
-          autoRotate: true
-        },
-        onStart: () => updateStepIfPlaying(2),
-        onComplete: () => updateStepIfPlaying(2)
-      })
-      // Step 4: Proxy to DID Validator (same as success flow)
-      .to("#transaction-packet-clone-2", { 
-        duration: 0.6,
-        backgroundColor: didValidatorColor,
-        autoAlpha: 1, 
-        scale: 0.8,
-        ease: "power1.inOut",
-        motionPath: {
-          path: "#proxy-to-did-path",
-          align: "#proxy-to-did-path",
-          alignOrigin: [0.5, 0.5],
-          autoRotate: true
-        },
-        onStart: () => updateStepIfPlaying(3),
-        onComplete: () => updateStepIfPlaying(3)
-      })
-      // Step 5: Clone packets return to Proxy - AML response comes back red (rejected)
-      .to("#transaction-packet-clone-1", { 
-        duration: 0.8,
-        backgroundColor: rejectionColor, // Changed to red to indicate rejection
-        ease: "power1.inOut",
-        motionPath: {
-          path: "#aml-to-proxy-path",
-          align: "#aml-to-proxy-path",
-          alignOrigin: [0.5, 0.5],
-          autoRotate: true
+        onComplete: () => {
+          // Đảm bảo cập nhật step
+          updateStepIfPlaying(8);
+          
+          // Hiển thị thông báo giao dịch thành công
+          setShowTransactionSuccess(true);
+          
+          // Pulsing effect cho packet
+          gsap.to("#transaction-packet", { 
+            duration: 0.7,
+            scale: 1.4,
+            ease: "elastic.out(1, 0.5)",
+            repeat: 2,
+            yoyo: true,
+            backgroundColor: "#404040",
+            boxShadow: "0 0 12px rgba(64, 64, 64, 0.8)",
+            onComplete: () => {
+              // Delay 3 giây rồi quay lại từ đầu
+              setTimeout(() => {
+                // Ẩn thông báo trước khi restart
+                setShowTransactionSuccess(false);
+                
+                // Quay lại từ đầu
+                setCurrentStep(0);
+                
+                if (isPlaying && timelineRef.current) {
+                  timelineRef.current.restart();
+                } else {
+                  // Nếu không phải đang phát, chỉ đặt lại trạng thái
+                  resetSimulationState();
+                }
+              }, 3000); // 3 giây delay
+            }
+          });
         }
-      })
-      .to("#transaction-packet-clone-2", { 
-        duration: 0.6,
-        backgroundColor: didValidatorColor,
-        ease: "power1.inOut",
-        motionPath: {
-          path: "#did-to-proxy-path",
-          align: "#did-to-proxy-path",
-          alignOrigin: [0.5, 0.5],
-          autoRotate: true
-        },
-        onStart: () => updateStepIfPlaying(4),
-        onComplete: () => updateStepIfPlaying(4)
-      })
-      // Step 5: Proxy clones fade out and main packet turns red (rejected)
-      .to(["#transaction-packet-clone-1", "#transaction-packet-clone-2"], { 
-        duration: 0.4,
-        autoAlpha: 0,
-        ease: "power1.inOut"
-      })
-      // Step 6: Main transaction packet turns red to indicate rejection
-      .to("#transaction-packet", { 
-        duration: 0.5, 
-        backgroundColor: rejectionColor,
-        boxShadow: "0 0 15px rgba(255, 51, 51, 0.8)",
-        scale: 1.3,
-        ease: "elastic.out(1, 0.5)",
-        onStart: () => updateStepIfPlaying(5),
-        onComplete: () => updateStepIfPlaying(5)
-      })
-      // Add a pulsating effect to show rejection
-      .to("#transaction-packet", { 
-        duration: 0.7,
-        scale: 0.9,
-        boxShadow: "0 0 10px rgba(255, 51, 51, 0.7)",
-        ease: "power1.inOut"
-      })
-      .to("#transaction-packet", { 
-        duration: 0.4,
-        scale: 1.2,
-        boxShadow: "0 0 15px rgba(255, 51, 51, 0.8)",
-        ease: "power2.inOut"
-      })
-      .to("#transaction-packet", { 
-        duration: 0.3,
-        scale: 1,
-        boxShadow: "0 0 5px rgba(255, 51, 51, 0.5)",
-        ease: "power2.inOut",
-        onComplete: () => updateStepIfPlaying(6) // Final step for rejected flow
       });
   };
   
@@ -375,16 +285,13 @@ const TransactionSimulator = () => {
     // Always update the step, regardless of play state
     setCurrentStep(step);
     setShowDetails(null); // Close any open details when advancing steps
-    
-    // Handle node highlighting for both scenarios
-    if (scenarioType === 'rejected' && step === 6) {
-      // This is the final step in rejected flow
-      // We could add special handling here if needed
-    }
   };
   
   const playStep = () => {
     if (!timelineRef.current) return;
+    
+    // Ẩn thông báo thành công khi bắt đầu phát animation mới
+    setShowTransactionSuccess(false);
     
     // Set speed
     timelineRef.current.timeScale(speed);
@@ -393,9 +300,29 @@ const TransactionSimulator = () => {
     if (currentStep === 0) {
       timelineRef.current.restart();
     } else if (currentStep >= steps.length - 1) {
-      // If at the end, restart
-      setCurrentStep(0);
-      timelineRef.current.restart();
+      // Nếu đang ở bước cuối cùng, hiển thị thông báo thành công
+      // sau đó delay 3s và quay lại từ đầu
+      setShowTransactionSuccess(true);
+      
+      gsap.to("#transaction-packet", {
+        duration: 0.7,
+        scale: 1.4,
+        ease: "elastic.out(1, 0.5)",
+        repeat: 2,
+        yoyo: true,
+        backgroundColor: "#404040",
+        boxShadow: "0 0 12px rgba(64, 64, 64, 0.8)",
+        onComplete: () => {
+          // Delay 3s rồi quay lại từ đầu
+          setTimeout(() => {
+            setShowTransactionSuccess(false);
+            resetSimulationState();
+            if (isPlaying && timelineRef.current) {
+              timelineRef.current.restart();
+            }
+          }, 3000);
+        }
+      });
     } else {
       // Go to the next step
       timelineRef.current.play();
@@ -411,23 +338,284 @@ const TransactionSimulator = () => {
     setIsPlaying(false);
   };
   
-  const resetSimulation = () => {
-    setIsPlaying(false);
+  // Hàm reset trạng thái mà không thay đổi trạng thái playing
+  const resetSimulationState = () => {
     setCurrentStep(0);
     setShowDetails(null);
+    setShowTransactionSuccess(false);
     
-    // Reset timeline based on current scenario
     if (timelineRef.current) {
+      // Đặt lại timeline và đặt node gói tin về vị trí ban đầu
       timelineRef.current.seek(0);
       timelineRef.current.clear();
       
-      // Re-setup animations for the current scenario
-      if (scenarioType === 'success') {
-        setupAnimations();
-      } else {
-        setupRejectedAnimations();
-      }
+      // Đặt lại vị trí và thuộc tính của node gói tin
+      gsap.set("#transaction-packet", { 
+        attr: { cx: positions[0].x, cy: positions[0].y },
+        scale: 1,
+        backgroundColor: "#3366cc",
+        boxShadow: "0 0 5px rgba(51, 102, 204, 0.5)"
+      });
+      
+      // Đặt lại packet clones
+      gsap.set(["#transaction-packet-clone-1", "#transaction-packet-clone-2"], {
+        autoAlpha: 0,
+        attr: { cx: positions[2].x, cy: positions[2].y }
+      });
+      
+      // Thiết lập lại animations
+      setupAnimations();
     }
+  };
+  
+  const resetSimulation = () => {
+    setIsPlaying(false);
+    resetSimulationState();
+  };
+  
+  const goToStep = (stepIndex) => {
+    setIsPlaying(false);
+    setCurrentStep(stepIndex);
+    setShowDetails(null);
+    
+    if (timelineRef.current) {
+      // Calculate the position in the timeline
+      const stepDuration = 0.8; // each step is roughly 0.8 second
+      const timePosition = stepIndex * stepDuration;
+      timelineRef.current.seek(timePosition);
+    }
+  };
+  
+  // Thiết lập animation cho kịch bản từ chối giao dịch
+  const setupRejectedAnimations = () => {
+    if (!timelineRef.current) return;
+    
+    // Reset timeline
+    timelineRef.current.clear();
+    
+    // Define colors for different parts of the flow
+    const userColor = "#3366cc";       // Blue for user
+    const walletColor = "#ffaa00";     // Orange for wallet
+    const proxyColor = "#00cc66";      // Green for Proxy RPC
+    const amlColor = "#ff6600";        // Orange for AML/Risk API (third-party)
+    const didValidatorColor = "#9966ff"; // Purple for DID Validator
+    const errorColor = "#FF3B30";      // Red for error/rejection
+    
+    // Create animations for the rejection scenario
+    timelineRef.current
+      // Step 1: User to Wallet - same as success flow
+      .set("#transaction-packet", { attr: { cx: positions[0].x, cy: positions[0].y }, backgroundColor: userColor, scale: 1, opacity: 1 })
+      .to("#transaction-packet", { 
+        duration: 0.8, 
+        attr: { cx: positions[1].x, cy: positions[1].y },
+        backgroundColor: walletColor, 
+        ease: "power1.inOut",
+        onStart: () => updateStepIfPlaying(0),
+        onComplete: () => updateStepIfPlaying(0)
+      })
+      // Step 2: Wallet to Proxy RPC - same as success flow
+      .to("#transaction-packet", { 
+        duration: 0.8, 
+        attr: { cx: positions[2].x, cy: positions[2].y },
+        backgroundColor: proxyColor, 
+        ease: "power1.inOut",
+        onStart: () => updateStepIfPlaying(1),
+        onComplete: () => updateStepIfPlaying(1) 
+      })
+      // Step 3: Proxy to Third-party RiskScore/AML API - same path but will get rejected
+      .to("#transaction-packet-clone-1", { 
+        duration: 0.8,
+        backgroundColor: amlColor,
+        autoAlpha: 1,
+        scale: 0.8,
+        ease: "power2.out",
+        motionPath: {
+          path: "#proxy-to-aml-path",
+          align: "#proxy-to-aml-path",
+          alignOrigin: [0.5, 0.5],
+          autoRotate: true
+        },
+        onStart: () => updateStepIfPlaying(2),
+        onComplete: () => updateStepIfPlaying(2)
+      })
+      // Step 4: AML API processes and detects high-risk transaction - using a vibration animation
+      .to("#transaction-packet-clone-1", { 
+        duration: 0.3,
+        scale: 1.2,
+        backgroundColor: errorColor,
+        boxShadow: "0 0 15px rgba(255, 59, 48, 0.8)",
+        ease: "elastic.out(1, 0.5)",
+        onStart: () => updateStepIfPlaying(3)
+      })
+      .to("#transaction-packet-clone-1", {
+        duration: 0.1,
+        x: "-=5",
+        repeat: 5,
+        yoyo: true,
+        ease: "power1.inOut",
+        className: "shake-animation"
+      })
+      // Step 5: Transaction is rejected and returns to Proxy
+      .to("#transaction-packet-clone-1", { 
+        duration: 0.8,
+        backgroundColor: errorColor,
+        ease: "power1.inOut",
+        motionPath: {
+          path: "#aml-to-proxy-path",
+          align: "#aml-to-proxy-path",
+          alignOrigin: [0.5, 0.5],
+          autoRotate: true
+        },
+        onComplete: () => updateStepIfPlaying(4)
+      })
+      // Step 6: Proxy receives rejection and main packet turns red
+      .to("#transaction-packet", { 
+        duration: 0.3,
+        scale: 1.3,
+        backgroundColor: errorColor,
+        boxShadow: "0 0 15px rgba(255, 59, 48, 0.8)",
+        ease: "elastic.out(1, 0.5)",
+        onComplete: () => updateStepIfPlaying(5)
+      })
+      // Transaction rejected clone fades out
+      .to("#transaction-packet-clone-1", { 
+        duration: 0.4,
+        autoAlpha: 0,
+        ease: "power1.inOut"
+      })
+      // Final rejection animation and show transaction rejected message
+      .to("#transaction-packet", { 
+        duration: 0.3,
+        scale: 1.4,
+        x: "+=10",
+        repeat: 2,
+        yoyo: true,
+        ease: "power1.inOut",
+        onComplete: () => {
+          // Show transaction rejected alert
+          setShowTransactionRejected(true);
+          
+          // Pulsing effect for packet
+          gsap.to("#transaction-packet", { 
+            duration: 0.7,
+            scale: 1.4,
+            ease: "elastic.out(1, 0.5)",
+            repeat: 2,
+            yoyo: true,
+            backgroundColor: errorColor,
+            boxShadow: "0 0 12px rgba(255, 59, 48, 0.8)",
+            onComplete: () => {
+              // Delay 3 seconds then restart
+              setTimeout(() => {
+                // Hide alert before restarting
+                setShowTransactionRejected(false);
+                
+                // Reset to beginning
+                setCurrentStep(0);
+                
+                if (isPlaying && timelineRef.current) {
+                  timelineRef.current.restart();
+                } else {
+                  // If not playing, just reset state
+                  resetSimulationState();
+                }
+              }, 3000); // 3 second delay
+            }
+          });
+        }
+      });
+  };
+  
+  const updateStepIfPlaying = (step) => {
+    // Always update the step, regardless of play state
+    setCurrentStep(step);
+    setShowDetails(null); // Close any open details when advancing steps
+  };
+  
+  const playStep = () => {
+    if (!timelineRef.current) return;
+    
+    // Ẩn thông báo thành công khi bắt đầu phát animation mới
+    setShowTransactionSuccess(false);
+    
+    // Set speed
+    timelineRef.current.timeScale(speed);
+    
+    // Determine where to start in the timeline
+    if (currentStep === 0) {
+      timelineRef.current.restart();
+    } else if (currentStep >= steps.length - 1) {
+      // Nếu đang ở bước cuối cùng, hiển thị thông báo thành công
+      // sau đó delay 3s và quay lại từ đầu
+      setShowTransactionSuccess(true);
+      
+      gsap.to("#transaction-packet", {
+        duration: 0.7,
+        scale: 1.4,
+        ease: "elastic.out(1, 0.5)",
+        repeat: 2,
+        yoyo: true,
+        backgroundColor: "#404040",
+        boxShadow: "0 0 12px rgba(64, 64, 64, 0.8)",
+        onComplete: () => {
+          // Delay 3s rồi quay lại từ đầu
+          setTimeout(() => {
+            setShowTransactionSuccess(false);
+            resetSimulationState();
+            if (isPlaying && timelineRef.current) {
+              timelineRef.current.restart();
+            }
+          }, 3000);
+        }
+      });
+    } else {
+      // Go to the next step
+      timelineRef.current.play();
+    }
+  };
+  
+  const startSimulation = () => {
+    setIsPlaying(true);
+    setShowDetails(null); // Close details popup when playing
+  };
+  
+  const pauseSimulation = () => {
+    setIsPlaying(false);
+  };
+  
+  // Hàm reset trạng thái mà không thay đổi trạng thái playing
+  const resetSimulationState = () => {
+    setCurrentStep(0);
+    setShowDetails(null);
+    setShowTransactionSuccess(false);
+    
+    if (timelineRef.current) {
+      // Đặt lại timeline và đặt node gói tin về vị trí ban đầu
+      timelineRef.current.seek(0);
+      timelineRef.current.clear();
+      
+      // Đặt lại vị trí và thuộc tính của node gói tin
+      gsap.set("#transaction-packet", { 
+        attr: { cx: positions[0].x, cy: positions[0].y },
+        scale: 1,
+        backgroundColor: "#3366cc",
+        boxShadow: "0 0 5px rgba(51, 102, 204, 0.5)"
+      });
+      
+      // Đặt lại packet clones
+      gsap.set(["#transaction-packet-clone-1", "#transaction-packet-clone-2"], {
+        autoAlpha: 0,
+        attr: { cx: positions[2].x, cy: positions[2].y }
+      });
+      
+      // Thiết lập lại animations
+      setupAnimations();
+    }
+  };
+  
+  const resetSimulation = () => {
+    setIsPlaying(false);
+    resetSimulationState();
   };
   
   const goToStep = (stepIndex) => {
@@ -665,7 +853,15 @@ const TransactionSimulator = () => {
                         opacity={currentStep >= 8 ? 1 : 0.5}
                         onClick={() => toggleDetails(8)}
                       >
-                        <rect x="600" y="70" width="70" height="80" rx="5" fill={currentStep === 8 ? "#404040" : "#eee"} className={currentStep === 8 ? "l1-node-active" : ""} />
+                        <rect 
+                          x="600" 
+                          y="70" 
+                          width="70" 
+                          height="80" 
+                          rx="5" 
+                          fill={currentStep === 8 ? "#404040" : "#eee"} 
+                          className={currentStep === 8 ? "l1-node-active" : ""} 
+                        />
                         <text x="635" y="95" textAnchor="middle" fill={currentStep === 8 ? "white" : "#666"} fontSize="12" fontWeight="bold">Ethereum</text>
                         <text x="635" y="115" textAnchor="middle" fill={currentStep === 8 ? "white" : "#666"} fontSize="12" fontWeight="bold">L1</text>
                         <text x="635" y="135" textAnchor="middle" fill={currentStep === 8 ? "white" : "#666"} fontSize="9">Testnet</text>
@@ -699,93 +895,6 @@ const TransactionSimulator = () => {
                       <circle id="transaction-packet-clone-1" cx={positions[2].x} cy={positions[2].y} r="6" fill="#3366cc" opacity="0" filter="url(#glow)" />
                       <circle id="transaction-packet-clone-2" cx={positions[2].x} cy={positions[2].y} r="6" fill="#3366cc" opacity="0" filter="url(#glow)" />
                       
-                      {/* Transaction Status Alerts in center */}
-                      {/* Success Alert */}
-                      {scenarioType === 'success' && currentStep === 8 && (
-                        <g className="transaction-status-alert show transaction-status-success">
-                          {/* Semi-transparent overlay for entire diagram */}
-                          <rect x="0" y="0" width="960" height="320" fill="rgba(0,0,0,0.3)">
-                            <animate attributeName="opacity" values="0;0.3" dur="0.5s" fill="freeze" />
-                          </rect>
-                          
-                          {/* Animated alert background */}
-                          <rect x="330" y="110" width="300" height="120" rx="10" fill="#4BB543" fillOpacity="0.95">
-                            <animate attributeName="opacity" values="0;0.95" dur="0.5s" fill="freeze" />
-                            <animate attributeName="opacity" values="0.92;1;0.92" dur="2s" repeatCount="indefinite" begin="0.5s" />
-                          </rect>
-                          
-                          {/* Check Mark Icon - Larger and on left */}
-                          <g>
-                            <animate attributeName="opacity" values="0;1" dur="0.7s" fill="freeze" />
-                            <circle cx="370" cy="160" r="18" fill="white" />
-                            <path d="M362,160 L368,166 L378,154" stroke="#4BB543" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none">
-                              <animate attributeName="stroke-dashoffset" from="30" to="0" dur="0.8s" fill="freeze" />
-                            </path>
-                          </g>
-                          
-                          {/* Success Text - Larger and centered */}
-                          <text x="480" y="145" textAnchor="middle" fill="white" fontSize="20" fontWeight="bold" opacity="0">
-                            <animate attributeName="opacity" values="0;1" dur="0.5s" fill="freeze" begin="0.3s" />
-                            {language === 'vi' ? 'Giao dịch thành công!' : 'Transaction Successful!'}
-                          </text>
-                          <text x="480" y="175" textAnchor="middle" fill="white" fontSize="16" opacity="0">
-                            <animate attributeName="opacity" values="0;1" dur="0.5s" fill="freeze" begin="0.5s" />
-                            {language === 'vi' ? 'Đã xác nhận trên Ethereum L1' : 'Confirmed on Ethereum L1'}
-                          </text>
-                          
-                          {/* Animated Border */}
-                          <rect x="330" y="110" width="300" height="120" rx="10" fill="none" stroke="white" strokeWidth="3" strokeDasharray="8,4">
-                            <animate attributeName="opacity" values="0;1" dur="0.7s" fill="freeze" />
-                            <animate attributeName="stroke-dashoffset" from="0" to="24" dur="1.5s" repeatCount="indefinite" begin="0.7s" />
-                          </rect>
-                        </g>
-                      )}
-                      
-                      {/* Rejected Alert */}
-                      {scenarioType === 'rejected' && currentStep === 6 && (
-                        <g className="transaction-status-alert show transaction-status-rejected rejected-alert">
-                          {/* Semi-transparent overlay for entire diagram */}
-                          <rect x="0" y="0" width="960" height="320" fill="rgba(0,0,0,0.3)">
-                            <animate attributeName="opacity" values="0;0.3" dur="0.5s" fill="freeze" />
-                          </rect>
-                          
-                          {/* Alert Background */}
-                          <rect x="330" y="110" width="300" height="120" rx="10" fill="#FF3B30" fillOpacity="0.95">
-                            <animate attributeName="opacity" values="0;0.95" dur="0.5s" fill="freeze" />
-                            <animate attributeName="opacity" values="0.92;1;0.92" dur="2s" repeatCount="indefinite" begin="0.5s" />
-                          </rect>
-                          
-                          {/* X Icon - Larger and on left */}
-                          <g>
-                            <animate attributeName="opacity" values="0;1" dur="0.7s" fill="freeze" />
-                            <circle cx="370" cy="160" r="18" fill="white" />
-                            <path d="M362,153 L378,167 M378,153 L362,167" stroke="#FF3B30" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none">
-                              <animate attributeName="stroke-dashoffset" from="30" to="0" dur="0.8s" fill="freeze" />
-                            </path>
-                          </g>
-                          
-                          {/* Rejected Text - Larger and centered */}
-                          <text x="480" y="140" textAnchor="middle" fill="white" fontSize="20" fontWeight="bold" opacity="0">
-                            <animate attributeName="opacity" values="0;1" dur="0.5s" fill="freeze" begin="0.3s" />
-                            {language === 'vi' ? 'Giao dịch bị từ chối!' : 'Transaction Rejected!'}
-                          </text>
-                          <text x="480" y="165" textAnchor="middle" fill="white" fontSize="15" opacity="0">
-                            <animate attributeName="opacity" values="0;1" dur="0.5s" fill="freeze" begin="0.5s" />
-                            {language === 'vi' ? 'Không đáp ứng yêu cầu AML' : 'Failed AML Requirements'}
-                          </text>
-                          <text x="480" y="185" textAnchor="middle" fill="white" fontSize="15" opacity="0">
-                            <animate attributeName="opacity" values="0;1" dur="0.5s" fill="freeze" begin="0.7s" />
-                            {language === 'vi' ? 'và Risk Score quá cao' : 'and Risk Score too high'}
-                          </text>
-                          
-                          {/* Animated Border */}
-                          <rect x="330" y="110" width="300" height="120" rx="10" fill="none" stroke="white" strokeWidth="3" strokeDasharray="8,4">
-                            <animate attributeName="opacity" values="0;1" dur="0.7s" fill="freeze" />
-                            <animate attributeName="stroke-dashoffset" from="0" to="24" dur="1.5s" repeatCount="indefinite" begin="0.7s" />
-                          </rect>
-                        </g>
-                      )}
-                      
                       {/* Labels for diagram sections */}
                       <rect x="50" y="295" width="130" height="20" rx="4" fill="#f7f7f7" fillOpacity="0.8" />
                       <rect x="280" y="295" width="160" height="20" rx="4" fill="#f7f7f7" fillOpacity="0.8" />
@@ -796,150 +905,186 @@ const TransactionSimulator = () => {
                       <text x="360" y="308" textAnchor="middle" fill="#666" fontSize="11" fontWeight="bold" fontStyle="italic">Regulatory Compliance</text>
                       <text x="480" y="308" textAnchor="middle" fill="#666" fontSize="11" fontWeight="bold" fontStyle="italic">L2 Execution</text>
                       <text x="595" y="308" textAnchor="middle" fill="#666" fontSize="11" fontWeight="bold" fontStyle="italic">Security & Finality</text>
+                      
+                      {/* Transaction Success Alert - Đặt ở giữa mô hình */}
+                      {showTransactionSuccess && (
+                        <g className="transaction-success-alert">
+                          {/* Semi-transparent overlay for entire diagram */}
+                          <rect x="0" y="0" width="960" height="320" fill="rgba(0,0,0,0.3)" />
+
+                          {/* Alert Background - đặt ở giữa mô hình */}
+                          <rect x="330" y="110" width="300" height="100" rx="10" fill="#4BB543" fillOpacity="0.95" />
+                          
+                          {/* Check Mark Icon - Lớn hơn và ở bên trái */}
+                          <circle cx="370" cy="160" r="18" fill="white" />
+                          <path d="M362,160 L368,166 L378,154" stroke="#4BB543" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                          
+                          {/* Success Text - Lớn hơn và căn giữa */}
+                          <text x="480" y="145" textAnchor="middle" fill="white" fontSize="20" fontWeight="bold">
+                            {language === 'vi' ? 'Giao dịch thành công!' : 'Transaction Successful!'}
+                          </text>
+                          <text x="480" y="175" textAnchor="middle" fill="white" fontSize="16">
+                            {language === 'vi' ? 'Đã xác nhận trên Ethereum L1' : 'Confirmed on Ethereum L1'}
+                          </text>
+                          
+                          {/* Animated Border */}
+                          <rect x="330" y="110" width="300" height="100" rx="10" fill="none" stroke="white" strokeWidth="3" strokeDasharray="8,4">
+                            <animate attributeName="stroke-dashoffset" from="0" to="24" dur="1.5s" repeatCount="indefinite" />
+                          </rect>
+                        </g>
+                      )}
+                      
+                      {/* Transaction Rejected Alert - Đặt ở giữa mô hình */}
+                      {showTransactionRejected && (
+                        <g className="transaction-rejected-alert">
+                          {/* Semi-transparent overlay for entire diagram */}
+                          <rect x="0" y="0" width="960" height="320" fill="rgba(0,0,0,0.3)" />
+
+                          {/* Alert Background - đặt ở giữa mô hình */}
+                          <rect x="330" y="110" width="300" height="120" rx="10" fill="#FF3B30" fillOpacity="0.95" />
+                          
+                          {/* X Icon - Lớn hơn và ở bên trái */}
+                          <circle cx="370" cy="160" r="18" fill="white" />
+                          <path d="M362,153 L378,167 M378,153 L362,167" stroke="#FF3B30" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                          
+                          {/* Rejected Text - Lớn hơn và căn giữa */}
+                          <text x="480" y="140" textAnchor="middle" fill="white" fontSize="20" fontWeight="bold">
+                            {language === 'vi' ? 'Giao dịch bị từ chối!' : 'Transaction Rejected!'}
+                          </text>
+                          <text x="480" y="165" textAnchor="middle" fill="white" fontSize="15">
+                            {language === 'vi' ? 'Không đáp ứng yêu cầu AML' : 'Failed AML Requirements'}
+                          </text>
+                          <text x="480" y="185" textAnchor="middle" fill="white" fontSize="15">
+                            {language === 'vi' ? 'và Risk Score quá cao' : 'and Risk Score too high'}
+                          </text>
+                          
+                          {/* Animated Border */}
+                          <rect x="330" y="110" width="300" height="120" rx="10" fill="none" stroke="white" strokeWidth="3" strokeDasharray="8,4">
+                            <animate attributeName="stroke-dashoffset" from="0" to="24" dur="1.5s" repeatCount="indefinite" />
+                          </rect>
+                        </g>
+                      )}
                     </svg>
                   </div>
                   
                   {/* Controls */}
-                  <Card className="w-full mt-4" size="small">
-                    <Row gutter={[16, 16]} align="middle" justify="space-between">
-                      <Col xs={24} sm={12}>
-                        <Space wrap>
-                          {isPlaying ? (
-                            <Button 
-                              type="primary"
-                              icon={<PauseOutlined />}
-                              onClick={pauseSimulation}
-                              size="large"
-                            >
-                              {translations[language].controls.pause}
-                            </Button>
-                          ) : (
-                            <Button 
-                              type="primary"
-                              icon={<PlayCircleOutlined />}
-                              onClick={startSimulation}
-                              size="large"
-                            >
-                              {translations[language].controls.play}
-                            </Button>
-                          )}
-                          <Button 
-                            icon={<ReloadOutlined />}
-                            onClick={resetSimulation}
-                            size="large"
+                  <div className="w-full mt-4">                      {/* Scenario Selector */}
+                      <div className="flex justify-center items-center mb-4 bg-gray-100 p-3 rounded-lg">
+                        <span className="mr-3 font-medium text-gray-700">
+                          {language === 'vi' ? 'Kịch bản:' : 'Scenario:'}
+                        </span>
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => setScenarioType('success')} 
+                            className={`px-4 py-2 rounded-md transition-all flex items-center ${
+                              scenarioType === 'success' 
+                                ? 'bg-green-600 text-white shadow-md' 
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
                           >
-                            {translations[language].controls.reset}
-                          </Button>
-                        </Space>
-                      </Col>
-                      
-                      <Col xs={24} sm={12}>
-                        <Space wrap>
-                          <Typography.Text strong>Scenario:</Typography.Text>
-                          <Select 
-                            value={scenarioType}
-                            onChange={(value) => {
-                              setScenarioType(value);
-                              resetSimulation();
-                            }}
-                            style={{ width: 150 }}
-                            options={[
-                              { value: 'success', label: 'Success' },
-                              { value: 'rejected', label: 'Rejected (AML)' }
-                            ]}
-                          />
-                          
-                          <Typography.Text strong>{translations[language].controls.speed}:</Typography.Text>
-                          <Select 
-                            value={speed}
-                            onChange={(value) => setSpeed(value)}
-                            style={{ width: 80 }}
-                            options={[
-                              { value: 0.5, label: '0.5x' },
-                              { value: 1, label: '1x' },
-                              { value: 2, label: '2x' }
-                            ]}
-                          />
-                        </Space>
-                      </Col>
-                    </Row>
-                    
-                    <div className="mt-3 text-center">
-                      <Typography.Text type="secondary">
-                        <InfoCircleOutlined style={{ marginRight: 4 }} />
-                        {translations[language].nodeHelp}
-                      </Typography.Text>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            {language === 'vi' ? 'Giao dịch thành công' : 'Successful Transaction'}
+                          </button>
+                          <button 
+                            onClick={() => setScenarioType('rejected')} 
+                            className={`px-4 py-2 rounded-md transition-all flex items-center ${
+                              scenarioType === 'rejected' 
+                                ? 'bg-red-600 text-white shadow-md' 
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                            {language === 'vi' ? 'Giao dịch bị từ chối (AML)' : 'Rejected Transaction (AML)'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <div className="flex space-x-3">
+                          {isPlaying ? (
+                            <button 
+                              onClick={pauseSimulation} 
+                              className="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                              {translations[language].controls.pause}
+                            </button>
+                          ) : (
+                          <button 
+                            onClick={startSimulation} 
+                            className="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                            </svg>
+                            {translations[language].controls.play}
+                          </button>
+                        )}
+                        <button 
+                          onClick={resetSimulation} 
+                          className="px-5 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-all shadow-sm hover:shadow flex items-center justify-center"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                          </svg>
+                          {translations[language].controls.reset}
+                        </button>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="mr-2 text-gray-700 font-medium">{translations[language].controls.speed}:</span>
+                        <select 
+                          value={speed}
+                          onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                          className="px-3 py-2 border rounded-md shadow-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none transition-all"
+                        >
+                          <option value="0.5">0.5x</option>
+                          <option value="1">1x</option>
+                          <option value="2">2x</option>
+                        </select>
+                      </div>
                     </div>
-                  </Card>
+                    
+                    <div className="mt-3 text-center text-sm text-gray-600 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      {translations[language].nodeHelp}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
             
             {/* Bên phải: Transaction Steps */}
             <div className="lg:w-1/4 lg:pl-6">
-              <Card 
-                title={
-                  <Typography.Title level={4} style={{ margin: 0 }}>
-                    {translations[language].currentStep}
-                  </Typography.Title>
-                }
-                className="h-full"
-                styles={{
-                  header: {
-                    background: 'linear-gradient(90deg, #1890ff, #52c41a, #fa8c16)',
-                    borderRadius: '6px 6px 0 0'
-                  }
-                }}
-              >
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                    <div style={{
-                      width: 40,
-                      height: 40,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#1890ff',
-                      borderRadius: '50%',
-                      color: 'white',
-                      fontWeight: 'bold',
-                      marginRight: 12
-                    }}>
-                      {currentStep + 1}
-                    </div>
-                    <Typography.Text strong style={{ fontSize: 16, color: '#1890ff' }}>
-                      {steps[currentStep].name}
-                    </Typography.Text>
+              <div className="bg-white p-5 rounded-lg shadow h-full flex flex-col items-start justify-center relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-green-500 to-orange-500"></div>
+                <h3 className="text-xl font-semibold mb-4">{translations[language].currentStep}</h3>
+                <div className="flex items-center mb-3 w-full">
+                  <div className="w-10 h-10 flex items-center justify-center bg-primary rounded-full text-white font-bold mr-3">
+                    {currentStep + 1}
                   </div>
-                  
-                  <Alert
-                    message={steps[currentStep].description}
-                    type="info"
-                    showIcon
-                  />
-                  
-                  <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-                    {steps[currentStep].details}
-                  </Typography.Paragraph>
-                  
-                  <div style={{ 
-                    paddingTop: 12, 
-                    borderTop: '1px solid #f0f0f0', 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    fontSize: 12
-                  }}>
-                    <Typography.Text type="secondary">
-                      {translations[language].stepOf.replace('{current}', currentStep + 1).replace('{total}', steps.length)}
-                    </Typography.Text>
-                    {currentStep < steps.length - 1 && (
-                      <Typography.Text type="success">
-                        {translations[language].next}: {steps[currentStep + 1].name}
-                      </Typography.Text>
-                    )}
-                  </div>
-                </Space>
-              </Card>
+                  <div className="text-lg text-primary font-bold">{steps[currentStep].name}</div>
+                </div>
+                <div className="w-full p-3 bg-gray-50 rounded-lg mb-3 border-l-4 border-primary">
+                  <div className="font-medium text-gray-800">{steps[currentStep].description}</div>
+                </div>
+                <div className="text-gray-600 text-sm leading-relaxed">
+                  {steps[currentStep].details}
+                </div>
+                <div className="mt-4 pt-3 border-t border-gray-200 w-full flex justify-between text-sm">
+                  <div className="text-gray-500">{translations[language].stepOf.replace('{current}', currentStep + 1).replace('{total}', steps.length)}</div>
+                  {currentStep < steps.length - 1 && (
+                    <div className="text-primary">{translations[language].next}: {steps[currentStep + 1].name}</div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

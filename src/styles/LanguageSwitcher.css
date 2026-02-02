@@ -1,122 +1,21 @@
-/* Language Switcher Styles */
-.language-switcher {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.flag-button {
-  width: 38px;
-  height: 26px;
-  padding: 0;
-  background: none;
-  border: 2px solid transparent;
-  border-radius: 4px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.flag-button.active {
-  border-color: #3366cc;
-  box-shadow: 0 0 0 2px rgba(51, 102, 204, 0.3);
-}
-
-.flag-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-/* Vietnamese flag */
-.flag-vi {
-  width: 100%;
-  height: 100%;
-  background-color: #da251d; /* Red */
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.flag-vi::after {
-  content: "★";
-  color: #ffff00; /* Yellow star */
-  font-size: 16px;
-}
-
-/* English/UK flag simplified */
-.flag-en {
-  width: 100%;
-  height: 100%;
-  background-color: #012169; /* Dark blue */
-  position: relative;
-  overflow: hidden;
-}
-
-.flag-en::before {
-  content: "";
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    45deg,
-    transparent 40%,
-    #ffffff 40%,
-    #ffffff 60%,
-    transparent 60%
-  ), linear-gradient(
-    -45deg,
-    transparent 40%,
-    #ffffff 40%,
-    #ffffff 60%,
-    transparent 60%
-  );
-}
-
-.flag-en::after {
-  content: "";
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 35%,
-    #c8102e 35%,
-    #c8102e 65%,
-    transparent 65%
-  ), linear-gradient(
-    180deg,
-    transparent 35%,
-    #c8102e 35%,
-    #c8102e 65%,
-    transparent 65%
-  );
-}
-
-/* Floating header with language switcher */
+/* Language Switcher Styles - Updated for Ant Design */
 .floating-language-switcher {
   position: fixed;
   top: 20px;
   right: 20px;
   z-index: 1000;
-  background-color: white;
-  padding: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 8px;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-/* Small screen adjustments */
 @media (max-width: 768px) {
   .floating-language-switcher {
     top: 10px;
     right: 10px;
-    padding: 4px;
-  }
-  
-  .flag-button {
-    width: 32px;
-    height: 22px;
+    padding: 6px;
   }
 }

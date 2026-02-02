@@ -1,4 +1,5 @@
 import React from 'react';
+import 'antd/dist/reset.css';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import TransactionSimulator from './components/TransactionSimulator';
